@@ -6,6 +6,8 @@ const hbs = require("hbs");
 require("./db/conn");
 const Register = require("./models/models");
 const bcrypt = require("bcryptjs");
+const cookieParser = require("cookie-parser");
+const auth = require("./middleware/auth")
 
 const port = process.env.PORT || 3000;
 const staticpath = path.join(__dirname, "../public")
@@ -14,6 +16,7 @@ const partialspath = path.join(__dirname, "../templates/partials");
 
 app.use(express.json());
 app.use(express.urlencoded({extended:false}))
+app.use(cookieParser());
 
 app.use(express.static(staticpath));
 app.set("view engine", "hbs");
@@ -31,6 +34,10 @@ app.get("/login", (req, res)=>{
     res.render("index");
 })
 
+app.get("/secret", auth,  (req, res)=>{
+    console.log(`this is cookie token : ${req.cookies.jwtLogin}`);
+    res.render("secret");
+})
 app.post("/register", async(req, res)=>{
     try {
         const password = req.body.password;
@@ -48,7 +55,12 @@ app.post("/register", async(req, res)=>{
 
             // generating tokens
             const token = await addUser.generateAuthToken();
-
+            
+            // console.log(token);
+            res.cookie("jwt", token,{
+                expires : new Date(Date.now()+30000),
+                httpOnly : true
+            });
             const registererd = await addUser.save();
             res.status(201).render("index");
         }else{
@@ -69,7 +81,14 @@ app.post("/login", async(req, res)=>{
         const matchPassword = await bcrypt.compare(password, verifyMail.password);
 
         const token = await verifyMail.generateAuthToken();
-        console.log(token);
+        // console.log(token);
+        res.cookie("jwtLogin", token,{
+            expires : new Date(Date.now()+ 600000),
+            httpOnly : true
+        });
+
+        // console.log(`This is login Cookie with token :${req.cookies.jwtLogin}`)
+
         if(matchPassword){
             res.status(201).send("You have logged in")
         }else{
@@ -78,6 +97,7 @@ app.post("/login", async(req, res)=>{
     } catch (error) {
         res.status(400).send("Invalid login details");
     }
+
 })
 
 app.listen(port, ()=>{
