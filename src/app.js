@@ -7,7 +7,7 @@ require("./db/conn");
 const Register = require("./models/models");
 const bcrypt = require("bcryptjs");
 const cookieParser = require("cookie-parser");
-const auth = require("./middleware/auth")
+const auth = require("./middleware/auth");
 
 const port = process.env.PORT || 3000;
 const staticpath = path.join(__dirname, "../public")
